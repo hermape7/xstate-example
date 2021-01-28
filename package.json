@@ -1,0 +1,26 @@
+{
+  "name": "01_selenium",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "wdio wdio.conf.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/cli": "^7.12.10",
+    "@babel/core": "^7.12.10",
+    "@babel/preset-env": "^7.12.11",
+    "@babel/register": "^7.12.10",
+    "@wdio/cli": "^6.5.0",
+    "@wdio/local-runner": "^6.5.0",
+    "@wdio/mocha-framework": "^6.5.0",
+    "@wdio/spec-reporter": "^6.4.7",
+    "@xstate/test": "^0.4.1",
+    "chromedriver": "^87.0.1",
+    "wdio-chromedriver-service": "^6.0.4",
+    "xstate": "^4.16.0"
+  }
+}
