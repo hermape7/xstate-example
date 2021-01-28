@@ -1,6 +1,6 @@
 import { Machine, assign } from "xstate";
 import { createModel } from "@xstate/test";
-
+import faker from 'faker'
 const loginMachine = Machine({
   initial: "login_opened",
   context: {
@@ -20,12 +20,17 @@ const loginMachine = Machine({
           actions: assign({ password: true }),
         },
         SET_REMEMBER_ME: "login_opened",
-        REGISTER: "registration",
+        OPEN_REGISTRATION: "registration",
         SIGN_IN: {
           target: "sign_in",
           cond: (context) => {
             return context.username === true && context.password === true;
           },
+        },
+      },
+      meta: {
+        test: async () => {
+          await (await browser.$('[data-test="signin-submit"]')).waitForDisplayed()
         },
       },
     },
@@ -44,15 +49,25 @@ const loginMachine = Machine({
       on: {
         GO_BACK: "login_opened",
         SIGN_UP: {
-          target: "login_opened",
+          target: "registration",
           cond: (context) => context.registration_done === true,
           actions: assign({ registration_done: false }),
+        },
+      },
+      meta: {
+        test: async () => {
+
         },
       },
     },
     sign_in: {
       on: {
         LOGOUT: "login_opened",
+      },
+      meta: {
+        test: async () => {
+
+        },
       },
     },
   },
@@ -61,13 +76,53 @@ const loginMachine = Machine({
 export const loginModel = createModel(loginMachine, {
   events: {
     SET_PASSWORD: async (browser) => {
+      const password = await browser.$('#password')
+      await password.setValue('ahoj')
     },
-    SET_USERNAME: async () => {},
-    SET_REMEMBER_ME: async () => {},
-    REGISTER: async () => {},
-    SIGN_IN: async () => {},
-    SIGN_UP: async () => {},
+    SET_USERNAME: async (browser) => {
+      const username = await browser.$('#username')
+      await username.setValue('ahoj')
+    },
+    SET_REMEMBER_ME: async (browser) => {
+      const input = await browser.$('[data-test="signin-remember-me"]')
+      await input.click()
+    },
+    OPEN_REGISTRATION: async (browser) => {
+      const link = await browser.$('[data-test="signup"]')
+      await link.click()
+    },
+    SIGN_IN: async (browser) => {
+      const signInButton = await browser.$('[data-test="signin-submit"]')
+      await signInButton.click()
+    },
+    SIGN_UP: async (browser) => {
+      const signUpButton = await browser.$('[data-test="signup-submit"]')
+      await signUpButton.click()
+    },
     LOGOUT: async () => {},
-    FILL_FORM: async () => {},
+    GO_BACK: async (browser) => {
+      const goBackLink = await browser.$('=Have an account? Sign In')
+      await goBackLink.click()
+    },
+    FILL_FORM: async (browser) => {
+      const userData = {
+        firstname: faker.name.findName(),
+        lastname: faker.name.lastName(),
+        username: faker.internet.userName(),
+        password: faker.internet.password(),
+      }
+
+      const firstname = await browser.$('#firstName')
+      const lastname = await browser.$('#lastName')
+      const username = await browser.$('#username')
+      const password = await browser.$('#password')
+      const confirmPassword = await browser.$('#confirmPassword')
+
+      await firstname.setValue(userData.firstname)
+      await lastname.setValue(userData.lastname)
+      await username.setValue(userData.username)
+      await password.setValue(userData.password)
+      await confirmPassword.setValue(userData.password)
+    },
   },
 });

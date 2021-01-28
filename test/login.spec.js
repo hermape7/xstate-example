@@ -7,7 +7,7 @@ describe("Cypress real web app - login", () => {
     await browser.setWindowSize(1800, 2000);
   });
 
-  const testPlans = loginModel.getSimplePathPlansTo('sign_in');
+  const testPlans = loginModel.getSimplePathPlansTo('registration');
 
   let actual = 0;
 
@@ -20,8 +20,8 @@ describe("Cypress real web app - login", () => {
         });
         it(path.description, async () => {
           console.log(plan.description, path.description);
-          // await browser.url("");
-          // await path.test(browser);
+          await browser.url("");
+          await path.test(browser);
         });
       });
     });
