@@ -1,12 +1,17 @@
 import { Machine, assign } from "xstate";
 import { createModel } from "@xstate/test";
+import { expect } from 'chai'
 import faker from 'faker'
+
+export let testingData = null;
+
 const loginMachine = Machine({
   initial: "login_opened",
   context: {
     username: false,
     password: false,
     registration_done: false,
+    registration_filled: false,
   },
   states: {
     login_opened: {
@@ -20,17 +25,24 @@ const loginMachine = Machine({
           actions: assign({ password: true }),
         },
         SET_REMEMBER_ME: "login_opened",
-        OPEN_REGISTRATION: "registration",
+        OPEN_REGISTRATION: {
+          target: "registration",
+          actions: assign({ password: false, username: false })
+        },
         SIGN_IN: {
           target: "sign_in",
           cond: (context) => {
             return context.username === true && context.password === true;
           },
+          actions: assign({ password: false, username: false })
         },
       },
       meta: {
         test: async () => {
           await (await browser.$('[data-test="signin-submit"]')).waitForDisplayed()
+          expect(await browser.getUrl()).to.equal(`${browser.config.baseUrl}signin`)
+
+          // TODO: Add some validations for elements after actions
         },
       },
     },
@@ -41,22 +53,23 @@ const loginMachine = Machine({
           on: {
             FILL_FORM: {
               target: "registration_opened",
-              actions: assign({ registration_done: true }),
+              actions: assign({ registration_filled: true }),
             },
           },
         },
       },
       on: {
-        GO_BACK: "login_opened",
+        GO_BACK: { target: "login_opened", actions: assign({ registration_done: false, registration_filled: false }) },
         SIGN_UP: {
-          target: "registration",
-          cond: (context) => context.registration_done === true,
-          actions: assign({ registration_done: false }),
+          target: "login_opened",
+          cond: (context) => context.registration_filled === true,
+          actions: assign({ registration_done: true, registration_filled: false }),
         },
       },
       meta: {
         test: async () => {
-
+          await (await browser.$('[data-test="signup-submit"]')).waitForDisplayed()
+          expect(await browser.getUrl()).to.equal(`${browser.config.baseUrl}signup`)
         },
       },
     },
@@ -66,22 +79,32 @@ const loginMachine = Machine({
       },
       meta: {
         test: async () => {
+          await browser.waitUntil(async () => await browser.getUrl() == browser.config.baseUrl)
+          expect(await (await browser.$('[data-test="main"]')).isDisplayed()).to.be.true
 
+          // TODO: Add some validations for elements after actions
+          
         },
       },
     },
   },
 });
 
+export const resetTestData = () => {
+  testingData = null;
+}
+
 export const loginModel = createModel(loginMachine, {
   events: {
     SET_PASSWORD: async (browser) => {
-      const password = await browser.$('#password')
-      await password.setValue('ahoj')
+      const passwordInput = await browser.$('#password')
+      const password = testingData ? testingData.user.password : "ahoj"
+      await passwordInput.setValue(password)
     },
     SET_USERNAME: async (browser) => {
-      const username = await browser.$('#username')
-      await username.setValue('ahoj')
+      const usernameInput = await browser.$('#username')
+      const username = testingData ? testingData.user.username : "ahoj"
+      await usernameInput.setValue(username)
     },
     SET_REMEMBER_ME: async (browser) => {
       const input = await browser.$('[data-test="signin-remember-me"]')
@@ -90,6 +113,10 @@ export const loginModel = createModel(loginMachine, {
     OPEN_REGISTRATION: async (browser) => {
       const link = await browser.$('[data-test="signup"]')
       await link.click()
+      // bug, when you need to click twice on link 
+      if (await link.isDisplayed()) {
+        await link.click()
+      }
     },
     SIGN_IN: async (browser) => {
       const signInButton = await browser.$('[data-test="signin-submit"]')
@@ -99,10 +126,15 @@ export const loginModel = createModel(loginMachine, {
       const signUpButton = await browser.$('[data-test="signup-submit"]')
       await signUpButton.click()
     },
-    LOGOUT: async () => {},
+    LOGOUT: async () => { },
     GO_BACK: async (browser) => {
       const goBackLink = await browser.$('=Have an account? Sign In')
       await goBackLink.click()
+      testingData = {}
+      // bug, when you need to click twice on link 
+      if (await goBackLink.isDisplayed()) {
+        await goBackLink.click()
+      }
     },
     FILL_FORM: async (browser) => {
       const userData = {
@@ -111,6 +143,8 @@ export const loginModel = createModel(loginMachine, {
         username: faker.internet.userName(),
         password: faker.internet.password(),
       }
+      testingData = {};
+      testingData.user = userData;
 
       const firstname = await browser.$('#firstName')
       const lastname = await browser.$('#lastName')

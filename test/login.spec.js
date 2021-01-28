@@ -1,26 +1,27 @@
-import { loginModel } from "./machines/machine-login";
+import { loginModel, resetTestData } from "./machines/machine-login";
 
-describe("Cypress real web app - login", () => {
+describe("Cypress real web app - login + registration", () => {
 
   before(async () => {
     // await browser.setWindowPosition(2000, 0);
-    await browser.setWindowSize(1800, 2000);
+    // await browser.setWindowSize(1800, 2000);
   });
 
-  const testPlans = loginModel.getSimplePathPlansTo('registration');
-
-  let actual = 0;
+  const testPlans = loginModel.getShortestPathPlans();
+  // uncomment only if you want to check how many testcases it will generate
+  //const testPlans = loginModel.getShortestPathPlans();
 
   testPlans.forEach((plan) => {
     describe(plan.description, () => {
       plan.paths.forEach((path) => {
         beforeEach(async () => {
-          actual += 1;
-          console.log(`${actual} / ${testPlans.length}`);
+          resetTestData()
+          await browser.reloadSession()
+          await browser.url("");
         });
         it(path.description, async () => {
+          // just for info, what test is executed 
           console.log(plan.description, path.description);
-          await browser.url("");
           await path.test(browser);
         });
       });
